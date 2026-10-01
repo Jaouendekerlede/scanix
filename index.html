@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0c1a1f">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Scanne tes documents, recadre-les, améliore-les et crée un PDF, directement sur ton appareil.">
+  <title>Scanix</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="sx-splash" class="sx-splash"><img src="icons/icon-192.png" alt=""><span>Scanix</span></div>
+
+  <!-- Accueil : liste des documents -->
+  <section id="sx-v-accueil" class="sx-vue">
+    <header class="sx-entete">
+      <h1>Scanix</h1>
+      <button type="button" class="sx-icone-btn" id="sx-reglages-btn" title="Réglages" aria-label="Réglages">⚙️</button>
+    </header>
+    <div id="sx-docs" class="sx-docs"></div>
+    <div class="sx-fab-groupe">
+      <button type="button" class="sx-fab-sec" id="sx-importer-btn" title="Importer des images de la galerie" aria-label="Importer des images">🖼️</button>
+      <button type="button" class="sx-fab" id="sx-scanner-btn" title="Scanner un document" aria-label="Scanner un document">📸</button>
+    </div>
+  </section>
+
+  <!-- Document : ses pages -->
+  <section id="sx-v-document" class="sx-vue" hidden>
+    <header class="sx-entete">
+      <button type="button" class="sx-icone-btn" id="sx-doc-retour" aria-label="Retour">←</button>
+      <h2 id="sx-doc-titre" title="Appuie pour renommer"></h2>
+      <button type="button" class="sx-icone-btn" id="sx-doc-supprimer" title="Supprimer le document" aria-label="Supprimer le document">🗑️</button>
+    </header>
+    <div id="sx-pages" class="sx-pages"></div>
+    <div class="sx-barre-actions">
+      <button type="button" id="sx-ajouter-btn">📸 Ajouter</button>
+      <button type="button" id="sx-importer-doc-btn">🖼️ Importer</button>
+      <button type="button" id="sx-pdf-btn" class="sx-primaire">📄 Créer le PDF</button>
+    </div>
+  </section>
+
+  <!-- Caméra -->
+  <section id="sx-v-camera" class="sx-vue sx-camera" hidden>
+    <video id="sx-cam-video" playsinline muted></video>
+    <div class="sx-cam-flash" id="sx-cam-flash"></div>
+    <div class="sx-cam-haut">
+      <button type="button" class="sx-cam-btn" id="sx-cam-fermer" aria-label="Fermer">✕</button>
+      <span id="sx-cam-compte" class="sx-cam-compte"></span>
+      <button type="button" class="sx-cam-btn sx-cam-ok" id="sx-cam-terminer" hidden>Terminer ✓</button>
+    </div>
+    <p id="sx-cam-erreur" class="sx-cam-erreur" hidden></p>
+    <div class="sx-cam-bas">
+      <button type="button" class="sx-cam-btn" id="sx-cam-galerie" title="Importer depuis la galerie" aria-label="Importer depuis la galerie">🖼️</button>
+      <button type="button" class="sx-cam-declencheur" id="sx-cam-declencheur" aria-label="Prendre la photo"></button>
+      <button type="button" class="sx-cam-btn" id="sx-cam-natif" title="Utiliser l'appareil photo du téléphone" aria-label="Appareil photo du téléphone">📷</button>
+    </div>
+  </section>
+
+  <!-- Éditeur de page -->
+  <section id="sx-v-editeur" class="sx-vue" hidden>
+    <header class="sx-entete">
+      <button type="button" class="sx-icone-btn" id="sx-ed-retour" aria-label="Retour">←</button>
+      <h2 id="sx-ed-titre">Page</h2>
+      <button type="button" class="sx-primaire sx-petit" id="sx-ed-enregistrer">✔ Enregistrer</button>
+    </header>
+    <div class="sx-onglets">
+      <button type="button" id="sx-ed-onglet-recadrer" class="actif">✂️ Recadrer</button>
+      <button type="button" id="sx-ed-onglet-retoucher">🎛️ Retoucher</button>
+    </div>
+    <div class="sx-scene" id="sx-ed-scene">
+      <div class="sx-zone" id="sx-ed-zone">
+        <canvas id="sx-ed-canvas"></canvas>
+        <div class="sx-cadre" id="sx-ed-cadre">
+          <svg id="sx-ed-svg" class="sx-cadre-svg"><polygon id="sx-ed-polygone"></polygon></svg>
+          <div id="sx-ed-poignees"></div>
+        </div>
+        <canvas id="sx-ed-loupe" class="sx-loupe" hidden></canvas>
+      </div>
+    </div>
+
+    <div id="sx-ed-panneau-recadrer" class="sx-panneau">
+      <p class="sx-aide">Glisse les 4 coins sur les bords du document : la loupe t'aide à viser juste.</p>
+      <div class="sx-ligne">
+        <button type="button" id="sx-ed-detecter">✨ Détecter les bords</button>
+        <button type="button" id="sx-ed-entiere">⬜ Photo entière</button>
+      </div>
+    </div>
+
+    <div id="sx-ed-panneau-retoucher" class="sx-panneau" hidden>
+      <div class="sx-filtres" id="sx-ed-filtres"></div>
+      <label class="sx-curseur">Luminosité <output id="sx-ed-lum-val">0</output>
+        <input type="range" id="sx-ed-lum" min="-100" max="100" step="1" value="0"></label>
+      <label class="sx-curseur">Contraste <output id="sx-ed-contr-val">0</output>
+        <input type="range" id="sx-ed-contr" min="-100" max="100" step="1" value="0"></label>
+      <label class="sx-curseur">Netteté <output id="sx-ed-nett-val">0</output>
+        <input type="range" id="sx-ed-nett" min="0" max="100" step="1" value="0"></label>
+      <div class="sx-ligne">
+        <button type="button" id="sx-ed-rot-g" aria-label="Pivoter à gauche">↺ Gauche</button>
+        <button type="button" id="sx-ed-rot-d" aria-label="Pivoter à droite">↻ Droite</button>
+        <button type="button" id="sx-ed-reinit">Réinitialiser</button>
+      </div>
+      <button type="button" class="sx-large" id="sx-ed-toutes">📑 Appliquer ces réglages à toutes les pages</button>
+    </div>
+  </section>
+
+  <!-- Création du PDF -->
+  <dialog id="sx-pdf" class="sx-dialog">
+    <h2>Créer le PDF</h2>
+    <label>Nom du fichier <input type="text" id="sx-pdf-nom" maxlength="80"></label>
+    <label>Format des pages
+      <select id="sx-pdf-format">
+        <option value="a4">A4 (image centrée)</option>
+        <option value="image">Taille de l'image</option>
+      </select>
+    </label>
+    <label>Qualité <select id="sx-pdf-qualite"></select></label>
+    <p class="sx-aide" id="sx-pdf-etat" hidden></p>
+    <div id="sx-pdf-resultat" hidden>
+      <p class="sx-aide" id="sx-pdf-info"></p>
+      <div class="sx-ligne">
+        <button type="button" class="sx-primaire" id="sx-pdf-partager">📤 Partager</button>
+        <button type="button" id="sx-pdf-telecharger">⬇️ Télécharger</button>
+      </div>
+    </div>
+    <div class="sx-boutons">
+      <button type="button" id="sx-pdf-fermer">Fermer</button>
+      <button type="button" class="sx-primaire" id="sx-pdf-creer">Créer le PDF</button>
+    </div>
+  </dialog>
+
+  <!-- Réglages -->
+  <dialog id="sx-reglages" class="sx-dialog">
+    <h2>Réglages</h2>
+    <section>
+      <h3>Stockage</h3>
+      <p class="sx-aide" id="sx-stockage"></p>
+      <p class="sx-aide" id="sx-persist-etat"></p>
+      <button type="button" id="sx-persist" class="sx-large">🔒 Protéger mes documents contre l'effacement</button>
+      <p class="sx-aide">Les documents sont gardés uniquement sur cet appareil. Pense à les exporter en PDF pour en avoir une copie : il n'y a pas de lien de sauvegarde, les images sont trop lourdes pour cela.</p>
+    </section>
+    <section>
+      <h3>À propos</h3>
+      <p class="sx-aide" id="sx-version"></p>
+      <p class="sx-aide" id="sx-mention"></p>
+    </section>
+    <div class="sx-boutons"><button type="button" class="sx-primaire" id="sx-reglages-fermer">Fermer</button></div>
+  </dialog>
+
+  <div id="sx-message" class="sx-message" role="status" hidden></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
