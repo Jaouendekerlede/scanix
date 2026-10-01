@@ -3,42 +3,35 @@
 
 import { COTE_MINIATURE, COTE_SOURCE_MAX, QUALITE_SOURCE, REGLAGES_DEFAUT } from "./config.js";
 import { ajouterPage } from "./db.js";
-import { detecterCoins } from "./detection.js";
-import { appliquer } from "./filtres.js";
-import { redresser } from "./geometrie.js";
+import { detecter } from "./detection.js";
+import { lirePrefs, sauverPrefs } from "./prefs.js";
+import { rendrePage } from "./rendu.js";
 import { canvasVersBlob, ouvrirImage, versCanvas } from "./utils.js";
 
-const CLE_REGLAGES = "scanix_reglages";
-
-// Derniers réglages utilisés : les nouvelles pages les reprennent.
+// Derniers réglages utilisés : les nouvelles pages les reprennent (le format
+// de cadre se garde aussi, pratique pour scanner plusieurs cartes de suite).
 export function reglagesPreferes() {
-  try {
-    return { ...REGLAGES_DEFAUT, ...JSON.parse(localStorage.getItem(CLE_REGLAGES)), rotation: 0 };
-  } catch {
-    return { ...REGLAGES_DEFAUT };
-  }
+  return { ...REGLAGES_DEFAUT, ...lirePrefs().reglagesPreferes, rotation: 0, annotations: [] };
 }
 
-export function retenirReglages({ filtre, luminosite, contraste, nettete }) {
-  try {
-    localStorage.setItem(CLE_REGLAGES, JSON.stringify({ filtre, luminosite, contraste, nettete }));
-  } catch {
-    // Stockage bloqué : tant pis, les réglages par défaut serviront.
-  }
+export function retenirReglages({ filtre, luminosite, contraste, nettete, format }) {
+  sauverPrefs({ reglagesPreferes: { filtre, luminosite, contraste, nettete, format } });
 }
 
-export async function miniatureDe(source, coins, reglages) {
-  const resultat = appliquer(redresser(source, coins, COTE_MINIATURE), reglages);
+export async function miniatureDe(source, page) {
+  const resultat = await rendrePage(source, page, COTE_MINIATURE);
   return canvasVersBlob(resultat, 0.8);
 }
 
 // `canvas` : photo entière (n'importe quelle taille). Renvoie la page enregistrée.
-export async function ajouterPageDepuisCanvas(docId, canvas) {
+export async function ajouterPageDepuisCanvas(docId, canvas, { coins, format } = {}) {
   const source = versCanvas(canvas, COTE_SOURCE_MAX);
-  const coins = detecterCoins(source);
+  const detection = coins ? { coins, trouve: true } : detecter(source);
   const reglages = reglagesPreferes();
-  const miniature = await miniatureDe(source, coins, reglages);
-  return ajouterPage(docId, { source: await canvasVersBlob(source, QUALITE_SOURCE), coins, reglages, miniature });
+  if (format) reglages.format = format;
+  const page = { coins: detection.coins, reglages };
+  const miniature = await miniatureDe(source, page);
+  return { page: await ajouterPage(docId, { source: await canvasVersBlob(source, QUALITE_SOURCE), coins: detection.coins, reglages, miniature }), bordsDetectes: detection.trouve };
 }
 
 // Importe des fichiers image (galerie). Renvoie le nombre de pages ajoutées.

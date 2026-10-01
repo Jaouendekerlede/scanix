@@ -42,13 +42,25 @@ function homographie(sortie, source) {
 
 // `coins` : 4 points normalisés (0..1) dans l'ordre haut-gauche, haut-droite,
 // bas-droite, bas-gauche. `coteMax` : taille maximale du grand côté du résultat.
-export function redresser(source, coins, coteMax) {
+// `ratio` (facultatif) : force le rapport grand côté / petit côté (A4, carte…),
+// en gardant l'orientation mesurée (paysage ou portrait).
+export function redresser(source, coins, coteMax, ratio = null) {
   const sw = source.width;
   const sh = source.height;
   const p = coins.map((c) => ({ x: c.x * sw, y: c.y * sh }));
   const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   let w = Math.max(d(p[0], p[1]), d(p[3], p[2]));
   let h = Math.max(d(p[0], p[3]), d(p[1], p[2]));
+  if (ratio) {
+    const grand = Math.max(w, h);
+    if (w >= h) {
+      w = grand;
+      h = grand / ratio;
+    } else {
+      h = grand;
+      w = grand / ratio;
+    }
+  }
   const echelle = Math.min(1, coteMax / Math.max(w, h));
   w = Math.max(1, Math.round(w * echelle));
   h = Math.max(1, Math.round(h * echelle));

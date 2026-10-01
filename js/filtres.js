@@ -6,6 +6,8 @@
 // divise chaque pixel par ce fond. Les ombres et les dégradés disparaissent,
 // le papier devient blanc uniforme, le texte reste net.
 
+import { dessinerAnnotations } from "./annotations.js";
+
 const BLOC = 8;
 const GAMMA_DOCUMENT = 1.4;
 
@@ -119,7 +121,7 @@ function netteteter(canvas, quantite) {
   ctx.putImageData(image, 0, 0);
 }
 
-function tourner(canvas, degres) {
+export function tourner(canvas, degres) {
   const angle = ((degres % 360) + 360) % 360;
   if (!angle) return canvas;
   const sortie = document.createElement("canvas");
@@ -133,9 +135,10 @@ function tourner(canvas, degres) {
   return sortie;
 }
 
-// `source` : canvas déjà redressé. Renvoie un NOUVEAU canvas retouché.
-export function appliquer(source, reglages) {
-  const { filtre, luminosite, contraste, nettete, rotation } = reglages;
+// Filtres, luminosité, contraste, netteté (sans annotations ni rotation).
+// `source` : canvas déjà redressé. Renvoie un NOUVEAU canvas.
+export function traiter(source, reglages) {
+  const { filtre, luminosite, contraste, nettete } = reglages;
   const w = source.width;
   const h = source.height;
   const canvas = document.createElement("canvas");
@@ -199,5 +202,49 @@ export function appliquer(source, reglages) {
   }
   ctx.putImageData(image, 0, 0);
   if (nettete > 0) netteteter(canvas, nettete);
+  return canvas;
+}
+
+// Dernière étape : annotations (dessinées sur une copie) puis rotation.
+export function finaliser(base, annotations = [], rotation = 0) {
+  let canvas = base;
+  if (annotations.length) {
+    canvas = document.createElement("canvas");
+    canvas.width = base.width;
+    canvas.height = base.height;
+    canvas.getContext("2d").drawImage(base, 0, 0);
+    dessinerAnnotations(canvas, annotations);
+  }
   return tourner(canvas, rotation);
+}
+
+// Tout d'un coup : retouche + annotations + rotation.
+export function appliquer(source, reglages) {
+  return finaliser(traiter(source, reglages), reglages.annotations, reglages.rotation);
+}
+
+// Reflet probable (lampe, fenêtre) : des zones « brûlées » alors que le reste
+// de la page est plutôt sombre. Estimation approximative, à titre d'alerte.
+export function detecterReflets(canvas) {
+  const pas = Math.max(8, Math.round(Math.max(canvas.width, canvas.height) / 60));
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const lums = [];
+  let brules = 0;
+  for (let y = 0; y + pas <= canvas.height; y += pas) {
+    for (let x = 0; x + pas <= canvas.width; x += pas) {
+      const d = ctx.getImageData(x, y, pas, pas).data;
+      let lum = 0;
+      let min = 255;
+      for (let i = 0; i < d.length; i += 4) {
+        lum += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+        min = Math.min(min, d[i], d[i + 1], d[i + 2]);
+      }
+      lums.push(lum / (d.length / 4));
+      if (min >= 245) brules++;
+    }
+  }
+  if (!lums.length) return false;
+  lums.sort((a, b) => a - b);
+  const mediane = lums[lums.length >> 1];
+  return mediane <= 205 && brules / lums.length > 0.03;
 }

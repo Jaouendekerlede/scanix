@@ -55,12 +55,14 @@ export async function ouvrirImage(fichier) {
   }
 }
 
-// Dessine une image (ou un bitmap) dans un canvas, réduit si besoin.
+// Dessine une image (bitmap, canvas ou <video>) dans un canvas, réduit si besoin.
 export function versCanvas(image, coteMax = Infinity) {
-  const echelle = Math.min(1, coteMax / Math.max(image.width, image.height));
+  const largeur = image.videoWidth ?? image.width;
+  const hauteur = image.videoHeight ?? image.height;
+  const echelle = Math.min(1, coteMax / Math.max(largeur, hauteur));
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(image.width * echelle));
-  canvas.height = Math.max(1, Math.round(image.height * echelle));
+  canvas.width = Math.max(1, Math.round(largeur * echelle));
+  canvas.height = Math.max(1, Math.round(hauteur * echelle));
   canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
   return canvas;
 }
@@ -105,3 +107,27 @@ export function choisirFichiers({ capture = false } = {}) {
 
 // Laisse respirer l'interface pendant un long calcul (barre de progression…).
 export const pause = () => new Promise((r) => setTimeout(r, 0));
+
+export function telechargerFichier(fichier) {
+  const lien = document.createElement("a");
+  lien.href = URL.createObjectURL(fichier);
+  lien.download = fichier.name;
+  lien.click();
+  setTimeout(() => URL.revokeObjectURL(lien.href), 10000);
+}
+
+// Propose le partage natif (feuille de partage du téléphone) ; si le partage
+// échoue pour une autre raison qu'une annulation volontaire (refusé par le
+// système, pas de gestionnaire compatible…), on ne perd pas le fichier : il
+// est téléchargé à la place.
+export async function partagerOuTelecharger(fichier) {
+  if (navigator.canShare?.({ files: [fichier] })) {
+    try {
+      await navigator.share({ files: [fichier], title: fichier.name });
+      return;
+    } catch (e) {
+      if (e.name === "AbortError") return; // l'utilisateur a fermé la feuille de partage
+    }
+  }
+  telechargerFichier(fichier);
+}
