@@ -2,8 +2,8 @@
 
 export const PROPRIETAIRE = "Jean-Luc RIO";
 export const ANNEE = 2026;
-export const VERSION = 2;
-export const VERSION_TEXTE = "Version 2 : détection des bords améliorée, capture automatique, lampe torche, mode carte d'identité, dossiers et couleurs, recherche, réorganisation au doigt, reconnaissance de texte (OCR), annotations (stylo, surligneur, texte, flou, signature), format forcé A4/carte, deux pages par feuille, PDF protégé par mot de passe, export en images, sauvegarde complète, « Partager vers Scanix », thème clair/sombre, alerte reflet. Version 1 : scan de documents, recadrage en perspective, filtres et réglages, export PDF multi-pages";
+export const VERSION = 3;
+export const VERSION_TEXTE = "Version 3 : option pour supprimer le document d'origine une fois son PDF récupéré (partagé ou téléchargé) -- jamais si le partage est annulé. Version 2 :détection des bords améliorée, capture automatique, lampe torche, mode carte d'identité, dossiers et couleurs, recherche, réorganisation au doigt, reconnaissance de texte (OCR), annotations (stylo, surligneur, texte, flou, signature), format forcé A4/carte, deux pages par feuille, PDF protégé par mot de passe, export en images, sauvegarde complète, « Partager vers Scanix », thème clair/sombre, alerte reflet. Version 1 : scan de documents, recadrage en perspective, filtres et réglages, export PDF multi-pages";
 
 export const MENTION_COURTE = `© ${ANNEE} ${PROPRIETAIRE} — Tous droits réservés`;
 

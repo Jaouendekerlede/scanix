@@ -5,7 +5,7 @@
 // préchargés ici : ils sont mis en cache à leur première utilisation, pour ne
 // pas alourdir l'installation de l'appli pour tout le monde.
 
-const CACHE_NOM = "scanix-v2";
+const CACHE_NOM = "scanix-v3";
 const FICHIERS_COQUILLE = ["./", "./index.html", "./style.css", "./manifest.json", "./js/main.js", "./js/accueil.js", "./js/camera.js", "./js/document.js", "./js/editeur.js", "./js/reglages.js", "./js/routeur.js", "./js/pages.js", "./js/db.js", "./js/detection.js", "./js/filtres.js", "./js/geometrie.js", "./js/pdf.js", "./js/pdf-crypto.js", "./js/utils.js", "./js/config.js", "./js/mentions.js", "./js/chargeur.js", "./js/prefs.js", "./js/theme.js", "./js/zip.js", "./js/sauvegarde.js", "./js/dossiers.js", "./js/annotations.js", "./js/signature.js", "./js/rendu.js", "./js/ocr.js", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {

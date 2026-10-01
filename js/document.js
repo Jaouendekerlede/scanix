@@ -132,10 +132,24 @@ async function lireTexte() {
   }
 }
 
+// Si la case "supprimer une fois récupéré" était cochée, et que le PDF a
+// vraiment été remis à la personne (pas une feuille de partage annulée), on
+// supprime le document original -- jamais avant, pour ne jamais perdre les
+// pages scannées si le partage/téléchargement a échoué entre-temps.
+async function surPdfRecupere(reussi) {
+  if (!reussi || !$("sx-pdf-supprimer").checked) return;
+  const nom = doc.nom;
+  await supprimerDocument(doc.id);
+  $("sx-pdf").close();
+  message(`🗑️ « ${nom} » supprimé : tu as déjà ton PDF.`);
+  retour();
+}
+
 function ouvrirPdf() {
   pdf = null;
   $("sx-pdf-nom").value = doc.nom;
   $("sx-pdf-mdp").value = "";
+  $("sx-pdf-supprimer").checked = false;
   $("sx-pdf-etat").hidden = true;
   $("sx-pdf-resultat").hidden = true;
   $("sx-pdf-creer").hidden = false;
@@ -232,8 +246,11 @@ export function initialiserDocument() {
   $("sx-pdf-btn").addEventListener("click", ouvrirPdf);
   $("sx-pdf-creer").addEventListener("click", creer);
   $("sx-pdf-fermer").addEventListener("click", () => $("sx-pdf").close());
-  $("sx-pdf-partager").addEventListener("click", () => partagerOuTelecharger(pdf));
-  $("sx-pdf-telecharger").addEventListener("click", () => telechargerFichier(pdf));
+  $("sx-pdf-partager").addEventListener("click", async () => surPdfRecupere(await partagerOuTelecharger(pdf)));
+  $("sx-pdf-telecharger").addEventListener("click", () => {
+    telechargerFichier(pdf);
+    surPdfRecupere(true); // un téléchargement ne peut pas être "annulé" comme une feuille de partage
+  });
   for (const [cle, q] of Object.entries(QUALITES_PDF)) $("sx-pdf-qualite").append(new Option(q.nom, cle));
   $("sx-pdf-qualite").value = "haute";
 }

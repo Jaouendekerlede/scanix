@@ -119,15 +119,18 @@ export function telechargerFichier(fichier) {
 // Propose le partage natif (feuille de partage du téléphone) ; si le partage
 // échoue pour une autre raison qu'une annulation volontaire (refusé par le
 // système, pas de gestionnaire compatible…), on ne perd pas le fichier : il
-// est téléchargé à la place.
+// est téléchargé à la place. Renvoie true si le fichier a bien été remis à la
+// personne (partagé ou téléchargé), false si elle a annulé la feuille de
+// partage -- utile avant une action irréversible (ex. supprimer l'original).
 export async function partagerOuTelecharger(fichier) {
   if (navigator.canShare?.({ files: [fichier] })) {
     try {
       await navigator.share({ files: [fichier], title: fichier.name });
-      return;
+      return true;
     } catch (e) {
-      if (e.name === "AbortError") return; // l'utilisateur a fermé la feuille de partage
+      if (e.name === "AbortError") return false; // l'utilisateur a fermé la feuille de partage
     }
   }
   telechargerFichier(fichier);
+  return true;
 }
